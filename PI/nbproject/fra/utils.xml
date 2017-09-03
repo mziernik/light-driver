@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project default="default" basedir=".">
+
+    <!-- dołączenie contriba -->
+    <taskdef resource="net/sf/antcontrib/antcontrib.properties">
+        <classpath>
+            <pathelement location="nbproject/fra/ant-contrib-1.0b3.jar"/>
+        </classpath>
+    </taskdef>
+    
+    
+    <macrodef name="unsetIfNotTrue">
+        <attribute name="property"/>
+        <sequential> 
+            <if>
+                <not>
+                    <istrue value="${@{property}}" />    
+                </not>
+                <then>
+                    <var name="@{property}" unset="true"/>
+                </then>
+            </if>
+        </sequential>
+    </macrodef>
+    
+    <macrodef name="print">
+        <text name="text"/>
+        <sequential>
+            <echo level="info"><![CDATA[-------------------------------------------------------------------------------------------------------
+                    @{text}
+-------------------------------------------------------------------------------------------------------]]></echo>
+        </sequential>
+    </macrodef>
+    
+    
+    <macrodef name="set" >
+        <attribute name="name"/>
+        <attribute name="value"/>
+        <sequential>
+            <script language="javascript">
+                <![CDATA[
+                project.setProperty("@{name}", "@{value}");
+                ]]>
+            </script>
+        </sequential>
+    </macrodef>
+        
+    <macrodef name="callIfTrue" >
+        <attribute name="property"/>
+        <attribute name="task"/>
+        <sequential> 
+            <if>
+                <istrue value="${@{property}}" />
+                <then>
+                    <antcall target="task" />  
+                </then>    
+            </if>
+                
+        </sequential>
+    </macrodef>
+	
+	<macrodef name="openInBrowser"> 
+        <attribute name="url"/>
+        <sequential>
+            <exec dir="${basedir}" executable="rundll32.exe">
+                <arg line="url.dll, FileProtocolHandler"/>
+                <arg line="@{url}"/>
+            </exec>
+        </sequential>   
+    </macrodef>
+	
+        
+
+    <macrodef name="orm"> 
+        <attribute name="url"/>
+        <attribute name="class"/>
+        <attribute name="package"/>
+        <sequential>
+            <java classname="com.context.tools.ORM" classpath=".\lib\*" >
+                <arg value="orm-build"/>
+                <arg value="@{class}"/>
+                <arg value="@{url}"/>
+                <arg value="@{package}"/>
+                <jvmarg value="-Dbasedir=${basedir}"/>
+                <jvmarg value="-Dsrc.dir=${src.dir}"/>
+            </java>
+        </sequential>   
+    </macrodef>
+    
+</project>

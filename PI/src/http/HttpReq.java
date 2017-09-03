@@ -128,7 +128,7 @@ public class HttpReq extends HttpExchange {
                 break;
             }
 
-        File f = new File("X:\\Projekty\\Sterownik\\SterownikPI\\src\\", file);
+        File f = new File("../src", file);
 
         try (InputStream in = f.exists()
                 ? new BufferedInputStream(new FileInputStream(f))

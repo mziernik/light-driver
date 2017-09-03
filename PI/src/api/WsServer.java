@@ -4,6 +4,7 @@ import com.json.*;
 import driver.Location;
 import driver.Main;
 import driver.RGB;
+import driver.State;
 import driver.Terminal;
 import driver.animations.Animation;
 import driver.channels.*;
@@ -16,6 +17,8 @@ import http.websocket.WebSocket;
 import http.websocket.framing.Framedata;
 import http.websocket.handshake.ClientHandshake;
 import http.websocket.server.WebSocketServer;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.LinkedList;
 import java.util.List;
 import mlogger.Log;
@@ -78,6 +81,18 @@ public class WsServer extends WebSocketServer {
 
             switch (obj.getStr("action", "")) {
 
+                case "setState": {
+                    JObject jState = obj.object("state");
+                    for (Field f : State.class.getDeclaredFields()) {
+                        if (!Modifier.isStatic(f.getModifiers()))
+                            continue;
+                        f.setAccessible(true);
+                        if (jState.contains(f.getName()))
+                            f.set(null, jState.getValue(f.getName()).asBoolean());
+                    }
+                    break;
+                }
+
                 case "animation": {
                     Animation a = Animation.all.get(obj.getStr("key"));
                     if (a == null)
@@ -113,6 +128,15 @@ public class WsServer extends WebSocketServer {
 
                     res.object("miscActions")
                             .put("updateGroups", "Aktualizacja grup");
+
+                    //--------------------------------------
+                    JObject jState = res.object("state");
+                    for (Field f : State.class.getDeclaredFields()) {
+                        if (!Modifier.isStatic(f.getModifiers()))
+                            continue;
+                        f.setAccessible(true);
+                        jState.put(f.getName(), f.get(null));
+                    }
 
                     //--------------------------------------
                     JObject jloc = res.object("loc");

@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project default="default" basedir=".." >
+
+    <import file="utils.xml"/>
+    <import file="structure.xml"/>
+    <import file="webapp.xml"/>
+    <import file="meta-inf.xml"/>
+    <import file="remote-platform.xml"/>
+
+ 
+
+    <!--
+    ****************************************************************************
+                             Predefiniowane target-y
+    ****************************************************************************
+    --> 
+       
+    <target name="-fra-pre-init">      
+        <property file="nbproject/service.properties"/>    
+        <if>
+            <not>  
+                <isset property="application.title"/>
+            </not>
+            <then>        
+                <!--Skrypt odczytuje wartość application.title z pliku project.properties-->
+                <script language="javascript"><![CDATA[  
+        properties = new java.util.Properties();        
+       properties.load(new java.io.FileInputStream(project.getProperty("basedir") 
+            + "/nbproject/project.properties"));  
+       project.setProperty("application.title",  properties.get("application.title"));  
+            ]]></script>                             
+            </then>
+        </if>  
+        
+        
+        <property environment="env"/>
+        <!--<property name="env.HOSTNAME" value="${env.COMPUTERNAME}"/>On Windows the hostname is in the environment variable 'COMPUTERNAME', on Linux the environment variable is 'HOSTNAME'-->
+    
+       
+    </target>       
+
+    <target name="-fra-post-init"> 
+        <unsetIfNotTrue property="is_webapp"/>
+        <unsetIfNotTrue property="backup_sources"/>        
+        
+        <!--<echoproperties destfile="all.properties"/>--> 
+        
+        <script language="javascript"><![CDATA[
+            
+            function get(name, replace){            
+                var prop = project.getProperty(name);
+                if (!prop)
+                    prop = "";
+                if (replace)
+                    prop = prop.split("\\").join("/");
+                return prop;
+            }
+            
+            var rmt = [];
+            rmt.push(get("platforms." + get("config") + ".platform.auth.username"));
+            rmt.push(get("platforms." + get("config") + ".platform.host"));
+            rmt.push(get("platforms." + get("config") + ".platform.port"));
+            rmt.push(get("platforms." + get("config") + ".platform.work.folder"));
+            
+            var args = get("run.jvmargs");                        
+            
+            if (args && args.indexOf('-Dbasedir=') >= 0)
+                args = args.substring(0, args.indexOf('-Dbasedir=')); 
+            
+            if (args) args += " ";
+            
+            args += " -Dbasedir='" + get("basedir", true) + "'"   
+                + " -Dsrc.dir='" + get("src.dir", true) + "'"
+                + " -Dweb.dir='" + get("src.web.dir", true)  + "'"
+                + (get("config") ? " -Dnbconfig='" + get("config") + "'" : "")
+                + (rmt.join("") ? " -Dnbremote='" + rmt[0] + "@" + rmt[1] + ":" + rmt[2] + rmt[3] + "'" : "")    
+                + " -ea"
+            
+            project.setProperty("run.jvmargs", args.trim());
+        ]]></script>   
+        
+        
+        <propertyfile file="nbproject/private/private.properties">                  
+            <entry key="run.jvmargs" value="${run.jvmargs}" /> 
+        </propertyfile>    
+        
+        
+    </target> 
+    
+ 
+        
+    
+        
+    <target name="-fra-post-clean">  
+        <delete file="${dist.jar}" />
+        <delete file="${dist.war}" />
+        <delete dir="${dst.web.dir}" />
+        
+        
+        <delete quiet="true" includeEmptyDirs="true">
+            <fileset dir="${build.classes.dir}" includes="**/*" defaultexcludes="no" />
+        </delete>
+        
+        <delete quiet="true" includeEmptyDirs="true">
+            <fileset dir="${temp.dir}" includes="**/*" defaultexcludes="no" />
+        </delete> 
+    </target> 
+    
+    
+    <target name="-fra-pre-compile" >            
+        <antcall target="-fra-check-structure"/>
+        <echo level="info"><![CDATA[Katalogi:
+    bin.dir:            ${bin.dir} 
+    src.dir:            ${src.dir}            
+    build.dir:          ${build.dir}
+    meta-inf.src.dir:   ${meta-inf.src.dir}
+    build.classes.dir:  ${build.classes.dir}
+    dist.jar:           ${dist.jar}   
+    dist.dir:           ${dist.dir}          
+            ]]>
+        </echo>
+        
+        <antcall target="-update-version-properties" /> 
+        <antcall target="-update-svn-info" /> 
+    </target>    
+    
+    <target name="-fra-post-compile">
+        <antcall target="-fra-add-servlet-api"/>
+        <antcall target="-update-index" />
+        <antcall target="-backup-sources" />
+        <antcall target="-fra-prepare-webapp" />   
+        <antcall target="-fra-print-remote-info"/>
+    </target>    
+    
+    <target name="-fra-pre-dist">
+    </target>
+    
+    <target name="-fra-post-dist">    
+        <antcall target="-fra-post-jar"/>
+    </target>
+    
+    <target name="-fra-pre-jar">
+    </target>
+          
+    <target name="-fra-post-jar">  
+        <move  todir="${bin.dir}" >
+            <fileset dir="${dist.dir}">
+                <include name="**/*.jar*"/>
+            </fileset>  
+        </move>
+    </target>
+    
+    <target name="-fra-pre-run-deploy">
+    </target>
+    
+    <target name="-fra-post-run-deploy">
+    </target>
+
+     
+    <!--
+    ****************************************************************************
+                             Definicje prywatnych procedur
+    ****************************************************************************
+    --> 
+   
+    <target name="-fra-print-remote-info" if="platform.runtime">
+        <echo ><![CDATA[
+Zdalne debugowanie:
+1. tworzymy konto użytkownika w Windowsie
+   net user java debug /add /passwordchg:no /fullname:"Java Debug" /comment:"Konto deweloperskie" /expires:never
+2. Udostępniamy katalog projektu pod nazwą Lincore w trybie odczyt/zapis
+   net share ${service.name}="${basedir}" /GRANT:java,FULL 
+3. W Debianie:
+   mkdir -p ${remote.mnt.path} && mount -t cifs //${env.COMPUTERNAME}/${service.name} -o username=java,password=debug ${remote.mnt.path}
+            ]]>
+        </echo>
+    </target> 
+   
+    <target name="-backup-sources" if="backup-sources"> 
+        <tstamp> 
+            <format property="backup.ts" pattern="yyyy-MM-dd HH-mm-ss"/> 
+        </tstamp>
+            
+        <parallel>
+            <print>Tworzę kopię zapasową plików źródłowych</print>        
+            <zip destfile="${backup.dir}/${backup.ts}.zip" >
+                <zipfileset dir="${src.dir}" prefix="src"/>
+                <zipfileset dir="${test.src.dir}" prefix="test"/>
+                <zipfileset dir="nbproject" prefix="nbproject"/>               
+            </zip>
+        </parallel>
+    </target>  
+    
+
+        
+</project>

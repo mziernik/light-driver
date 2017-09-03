@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project default="default" basedir=".." 
+         xmlns:remote="http://www.netbeans.org/ns/j2se-project/remote-platform/1" 
+         xmlns:j2seproject1="http://www.netbeans.org/ns/j2se-project/1" 
+         xmlns:j2seproject3="http://www.netbeans.org/ns/j2se-project/3">
+
+    <import file="utils.xml"/>
+ 
+
+    <target name="-fra-prepare-webapp" if="is_webapp">
+        
+        <mkdir dir="${src.web.dir}"/>        
+        <mkdir dir="${dst.web.dir}"/>   
+        <!--Utwórz katlog lib - tomcat go wymaga-->
+        <mkdir dir="${dst.web.dir}/WEB-INF/lib" />
+        <mkdir dir="${dst.web.dir}/META-INF" />
+        <if>
+            <not>
+                <available file="${src.web.dir}/WEB-INF/web.xml"/>
+            </not>
+            <then>
+                <print>Generuję plik ${src.web.dir}/WEB-INF/web.xml</print> 
+                
+                
+                <echo  file="${src.web.dir}/WEB-INF/web.xml"><![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<web-app version="3.0" xmlns="http://java.sun.com/xml/ns/javaee" 
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+        xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd">
+    <session-config>
+        <session-timeout>
+            30
+        </session-timeout>
+    </session-config>
+</web-app>]]>
+                </echo>
+            </then>  
+        </if>
+    </target>   
+    
+    
+    <target name="-fra-build-war" depends="-fra-pre-init"> 
+        
+        
+
+        
+               
+        <copy todir="${dst.web.dir}">
+            <fileset dir="${src.web.dir}" />             
+        </copy>
+
+        
+        <print>Budowanie pliku ${bin.dir}/${dist.war.name}</print>
+        <war destfile="${bin.dir}/${dist.war.name}" >
+            <fileset dir="${src.web.dir}">
+                <include name="**/*.*"/>
+            </fileset>            
+            <mappedresources>
+                <fileset dir="lib" includes="**/*.jar" excludes="/embedded/" />
+                <chainedmapper>
+                    <flattenmapper/>
+                    <globmapper from="*.jar" to="WEB-INF/lib/*.jar" />
+                </chainedmapper>
+            </mappedresources>
+            <classes dir="${build.classes.dir}"/>
+        </war>
+    </target>   
+    
+ 
+    
+        
+</project>

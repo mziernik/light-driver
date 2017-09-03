@@ -35,7 +35,8 @@ public class Protocol implements/* SerialPortEventListener, */ Runnable {
         SerialPort[] commPorts = SerialPort.getCommPorts();
         serial = SerialPort.getCommPort(comPortName);
 
-        boolean openPort2 = serial.openPort();
+        if (!serial.openPort())
+            throw new Error("Nie można otworzyć portu " + comPortName);
 
         serial.setBaudRate(9600);
         serial.setParity(SerialPort.NO_PARITY);
@@ -86,6 +87,7 @@ public class Protocol implements/* SerialPortEventListener, */ Runnable {
         //  serial.addEventListener(this);
         writer = new BusWriter(serial);
 
+        System.out.println("Zainicjowany protokół na porcie " + comPortName);
     }
 
     /*

@@ -1,0 +1,1 @@
+Biblioteki znajduj¹ce siê w tym katalogu nie bêd¹ do³¹czone do pliku WAR

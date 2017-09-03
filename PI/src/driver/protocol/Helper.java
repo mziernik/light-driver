@@ -46,7 +46,7 @@ public class Helper {
                     int avail = serial.bytesAvailable();
                     if (avail < 0)
                         return;
-                    
+
                     byte[] bytes = new byte[avail];
                     serial.readBytes(bytes, bytes.length);
 
@@ -121,7 +121,11 @@ public class Helper {
     }
      */
     public void pwmWrite(int value) {
+        if (value == 256)
+            value = 255;
         pwmValue = value;
+
+      //  System.out.println("PIR pwm " + (value & 0xFF));
 
         byte[] data = new byte[]{(byte) 1, (byte) value};
         serial.writeBytes(data, data.length);

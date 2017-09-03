@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project default="default" basedir="..">
+
+    <target name="-fra-check-structure">
+                         
+        <fail unless="src.dir" message="Brak deklaracji zmiennej $${src.dir}"/>
+        <fail unless="bin.dir" message="Brak deklaracji zmiennej $${bin.dir}"/>
+                
+        <echo file="lib/embedded/.info.txt"><![CDATA[Biblioteki znajdujące się w tym katalogu nie będą dołączone do pliku WAR]]></echo> 
+                
+        <mkdir dir="${res.dir}"/>
+        <echo file="${res.dir}/.info.txt"><![CDATA[Zawartość tego katalogu będzie kopiowana do katalogu bin]]></echo>
+        
+        <copy todir="${bin.dir}" overwrite="false" granularity="9223372036854" >
+            <fileset dir="${res.dir}">
+                <exclude name="**/.info.txt"/>
+            </fileset>                
+        </copy>
+        
+        <if>
+            <isset property="is_webapp"/>
+            <then>
+                <mkdir dir="${dst.web.dir}"/>
+                <mkdir dir="${src.web.dir}"/>
+        
+                <copy todir="${dst.web.dir}" >
+                    <fileset dir="${src.web.dir}">
+                        <exclude name="**/.info.txt"/>
+                    </fileset>
+                
+                </copy>
+            </then>
+        </if>
+        
+        <if>
+            <not>
+                <available file="${var.dir}"/>
+            </not>
+            <then>
+                <mkdir dir="${var.dir}"/>
+            </then>  
+        </if>
+        
+        <if>
+            <not>
+                <available file="${etc.dir}"/>
+            </not>
+            <then>
+                <mkdir dir="${etc.dir}"/>
+            </then>  
+        </if>
+        
+    </target>  
+        
+        
+    <target name="-fra-add-servlet-api" unless="is_webapp">   
+        <print>Dodaję moduły javax.servlet-api-3.1.0</print> 
+        <unzip src="nbproject/fra/javax.servlet-api-3.1.0.jar" dest="${build.classes.dir}"/>
+    </target>
+</project>

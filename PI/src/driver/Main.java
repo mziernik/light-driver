@@ -4,10 +4,10 @@ import http.HServer;
 import driver.protocol.*;
 import api.WsServer;
 import com.fazecast.jSerialComm.SerialPort;
+import java.io.File;
 import java.io.FileInputStream;
 import mlogger.*;
 import java.net.InetAddress;
-import java.util.LinkedList;
 import java.util.Properties;
 import sun.misc.Signal;
 
@@ -27,14 +27,17 @@ public class Main {
     public static Protocol protocol;
     public static Helper helper;
 
+    @SuppressWarnings("all")
     public static void main(String[] args) {
+
+        System.out.println("Inicjalizacja sterownika");
 
         Signal.handle(new Signal("INT"), (sig) -> {
             System.out.println("Sterownik: INTERUPT Signal");
             System.exit(1);
         });
 
-        if (isWindows)
+        if (isWindows) {
             try {
                 Class.forName(Index.class.getName());
                 HServer.init();
@@ -44,6 +47,7 @@ public class Main {
                 Log.error(e);
                 return;
             }
+        }
 
         MLogger.defaults.source = "Sterownik";
         MLogger logger = MLogger.getInstance();
@@ -60,52 +64,15 @@ public class Main {
 
             Class.forName(Index.class.getName()); // inicjalizacja
 
-            for (SerialPort sp : SerialPort.getCommPorts())
+            for (SerialPort sp : SerialPort.getCommPorts()) {
                 Log.debug("Available serial port: " + sp.getSystemPortName());
+            }
 
             Properties props = new Properties();
             try (FileInputStream fis = new FileInputStream("config.properties")) {
                 props.load(fis);
             }
 
-            /*
-            Map<String, String> map = new TreeMap<>();
-
-            try (InputStream in = Runtime.getRuntime().exec("dmesg").getInputStream()) {
-                String data = IOUtils.read(in, Charset.forName("UTF-8"));
-
-                String[] lines = data.split("\n");
-                for (String s : lines)
-                    if (s.contains("pl2303 converter now attached to")
-                            && s.contains("] usb ")
-                            && s.contains("ttyUSB")) {
-
-                        s = s.substring(s.indexOf("] usb ") + "] usb ".length()).trim();
-
-                        map.put(s.substring(0, s.indexOf(":")).trim(),
-                                "/dev/" + s.substring(s.lastIndexOf(" ") + 1).trim());
-
-                    }
-            }
-            
-            switch (hostname) {
-                case "ZMSERVER":
-                    helper = new Helper("COM6");
-                    //     protocol = new Protocol("COM6");
-                    break;
-                default:
-
-                    if (map.size() == 2) {
-                        ports.clear();
-                        ports.addAll(map.values());
-                    }
-
-                    if (ports.size() > 1)
-                        helper = new Helper(ports.get(1));
-                    break;
-
-            }
-             */
             if (props.containsKey("serial.main")) {
                 Log.event("Main serial: " + props.getProperty("serial.main"));
                 protocol = new Protocol(props.getProperty("serial.main"));

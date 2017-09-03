@@ -49,14 +49,51 @@ var ws;
 var currentTBar;
 var currentWindow;
 
+const state = {
+    pirEnabled: null,
+    scheduleEnabled: null
+};
+
+function updateState() {
+    ws.send(JSON.stringify({
+        action: "setState",
+        state: state
+    }));
+}
+
 function PIR(data) {
     this.power = data.power;
     this.state = data.state;
     this.value = data.value;
 
-
     var wnd = buildWindow("pir", "Oświetlenie zewnętrzne").children[1];
+
     new TrackBar(this.value, "pir", "Lampy").draw(wnd);
+
+
+    const div = wnd.tag("div");
+    div.style.display = "flex";
+
+    var lbl = div.tag("label");
+    lbl.style.flex = "auto";
+    lbl.tag("input")
+            .attr({type: "checkbox", checked: state.pirEnabled ? "checked" : undefined})
+            .onclick = e => {
+                state.pirEnabled = e.currentTarget.checked;
+                updateState();
+            };
+    lbl.tag("span").setText("Czujniki PIR");
+
+
+    lbl = div.tag("label");
+    lbl.style.flex = "auto";
+    lbl.tag("input")
+            .attr({type: "checkbox", checked: state.scheduleEnabled ? "checked" : undefined})
+            .onclick = e => {
+                state.scheduleEnabled = e.currentTarget.checked;
+                updateState();
+            };
+    lbl.tag("span").setText("Harmonogram");
 
     wnd.tag("hr");
 
@@ -318,24 +355,6 @@ function TrackBar(value, key, name) {
         }
 
         setPercent();
-        /*
-         if (this.rgbBar) {
-         
-         var c = tbar.tag("canvas");
-         c.attr({class: "rgb-bar"});
-         
-         var ctx = c.getContext("2d");
-         
-         for (var i = 0; i < c.width; i++) {
-         ctx.strokeStyle = "hsl(" + (360 * i / c.width) + ", 100%, 50%)";
-         ctx.beginPath();
-         ctx.moveTo(i, 0);
-         ctx.lineTo(i, c.height);
-         ctx.stroke();
-         }
-         }
-         */
-
 
         var ttrack = tbar.tag("input")
                 .attr({
@@ -573,19 +592,17 @@ addEventListener("hashchange", function (e) {
 });
 
 function loadData(data) {
+    for (var name in data.state)
+        state[name] = data.state[name];
+
     for (var name in data.loc)
         new Location(name, data.loc[name]);
 
     for (var name in data.term)
         new Terminal(name, data.term[name]);
 
-
-
-
     for (var name in data.group)
         new Group(name, data.group[name]);
-
-
 
     for (var name in data.rgb)
         new RGB(name, data.rgb[name]);
@@ -602,6 +619,7 @@ function loadData(data) {
 //------------------------------------
 
     var wndGroups = buildWindow("groups", "Grupy");
+
     for (var name in groups)
         groups[name].draw(groups[name].window.children[1]);
 

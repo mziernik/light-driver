@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project default="default" basedir=".." 
+         xmlns:remote="http://www.netbeans.org/ns/j2se-project/remote-platform/1" 
+         xmlns:j2seproject1="http://www.netbeans.org/ns/j2se-project/1" 
+         xmlns:j2seproject3="http://www.netbeans.org/ns/j2se-project/3">
+
+    
+
+        
+    <target name="-update-index">
+        <property name="classes_path" location="${build.classes.dir}"/>        
+        <pathconvert pathsep="&#xA;" property="pre-index" >
+            <map from="${classes_path}\" to=""/>
+            <fileset dir="${classes_path}"/>
+        </pathconvert>
+        
+        <propertyregex property="index"
+                       input="${pre-index}"
+                       regexp="\\"
+                       replace="/"
+                       global="true"
+                       defaultValue="${pre-index}" />
+
+        <echo file="${meta-inf.src.dir}/files">${index}</echo>
+        <echo file="${meta-inf.dst.dir}/files">${index}</echo>
+    </target>
+    
+    <target name="-update-version-properties">
+        <property name="rel.var.dir" location="${var.dir}" relative="true" basedir="${bin.dir}"/>
+        <property name="rel.etc.dir" location="${etc.dir}" relative="true" basedir="${bin.dir}"/>
+        <property name="rel.web.dir" location="${dst.web.dir}" relative="true" basedir="${bin.dir}"/>
+        <property name="rel.tmp.dir" location="${temp.dir}" relative="true" basedir="${bin.dir}"/>
+                      
+        <print>Aktualizuję plik version.properties</print>       
+        <propertyfile file="${meta-inf.src.dir}/version.properties"> 
+            <entry key="build" value="1" type="int" operation="+"/> 
+            <entry key="revision" value="1" type="int" operation="+"/> 
+            <entry key="version" value="${service.version}" />
+            <entry key="date" type="date" value="now" pattern="yyyy-MM-dd HH:mm:ss.SSS" />
+            <entry key="name" value="${application.title}" />
+            <entry key="service.name" value="${service.name}" />          
+        </propertyfile>     
+    </target>  
+    
+    <target name="-update-svn-info" if="update.svn.info">
+        <parallel>
+            <exec executable="svn"
+                  output="${meta-inf.src.dir}/svn.info"
+                  failonerror="false"
+                  failifexecutionfails="false">
+                <arg value="info"/>
+            </exec>
+        </parallel>        
+    </target>
+        
+</project>
