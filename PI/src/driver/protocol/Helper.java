@@ -3,7 +3,6 @@ package driver.protocol;
 import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortDataListener;
 import com.fazecast.jSerialComm.SerialPortEvent;
-import java.util.Arrays;
 import mlogger.Log;
 
 public class Helper {
@@ -87,46 +86,12 @@ public class Helper {
         pwmWrite(0);
     }
 
-    /*
-    @Override
-    public void serialEvent(SerialPortEvent spe) {
-
-        if (spe.getEventType() != SerialPortEvent.RXCHAR) {
-            System.out.println("Zdarzenie " + spe.getEventType());
-        }
-
-        if (spe.getEventType() == SerialPortEvent.RXCHAR) {
-            try {
-
-                byte[] bytes = serial.readBytes();
-                if (bytes == null || bytes.length == 0) {
-                    return;
-                }
-
-                int v = bytes[0] & 0xFF;
-
-                pirState = (v & 0x01) != 0;
-                batState = (v & 0x02) == 0;
-
-                //   System.out.println("PIR: " + pirState + ", BAT: " + batState);
-                Log.info("status", "PIR: " + pirState + ", BAT: " + batState);
-
-                if (pirState)
-                    pir.flush();
-
-            } catch (Throwable ex) {
-                Log.error(ex);
-            }
-        }
-    }
-     */
     public void pwmWrite(int value) {
         if (value == 256)
             value = 255;
         pwmValue = value;
 
-      //  System.out.println("PIR pwm " + (value & 0xFF));
-
+        //  System.out.println("PIR pwm " + (value & 0xFF));
         byte[] data = new byte[]{(byte) 1, (byte) value};
         serial.writeBytes(data, data.length);
     }

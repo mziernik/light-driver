@@ -17,6 +17,7 @@
         <group>
             <file>file:/W:/Workspace/Sterownik/PI/src/driver/protocol/PIR.java</file>
             <file>file:/W:/Workspace/Sterownik/PI/src/driver/protocol/Helper.java</file>
+            <file>file:/W:/Workspace/Sterownik/PI/test/driver/protocol/PIRTest.java</file>
         </group>
     </open-files>
 </project-private>

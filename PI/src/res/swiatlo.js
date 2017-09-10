@@ -97,7 +97,53 @@ function PIR(data) {
 
     wnd.tag("hr");
 
-    var tbl = wnd.tag("table");
+    //--------------------------------------------------------------------------
+
+
+    var d = data.schedule[data.currentDay - 1];
+    if (d) {
+        var tbl = wnd.tag("table").tag("tbody");
+        var tr = tbl.tag("tr");
+        tr.tag("td").setText("Dzień roku");
+        tr.tag("td").setText(data.currentDay);
+
+        tr = tbl.tag("tr");
+        tr.tag("td").setText("Data");
+        tr.tag("td").setText(d[0]);
+
+        tr = tbl.tag("tr");
+        tr.tag("td").setText("Strefa czasowa");
+        tr.tag("td").setText("+" + d[1] + " UTC");
+
+        tr = tbl.tag("tr");
+        tr.tag("td").setText("Załączenie");
+        tr.tag("td").setText(d[2]);
+
+        tr = tbl.tag("tr");
+        tr.tag("td").setText("Wyłączenie");
+        tr.tag("td").setText(d[3]);
+
+        tr = tbl.tag("tr");
+        tr.tag("td").setText("Czas świecenia");
+        tr.tag("td").setText(d[4]);
+
+        tr = tbl.tag("tr");
+        tr.tag("td").setText("Długość dnia");
+        tr.tag("td").setText(d[5]);
+
+        tr = tbl.tag("tr");
+        tr.tag("td").setText("Wschód");
+        tr.tag("td").setText(d[6]);
+
+        tr = tbl.tag("tr");
+        tr.tag("td").setText("Zachód");
+        tr.tag("td").setText(d[7]);
+    }
+
+    //--------------------------------------------------------------------------
+
+    tbl = wnd.tag("table");
+    tbl.style.width = "100%";
 
     var tr = tbl.tag("thead").tag("tr");
 
@@ -106,18 +152,21 @@ function PIR(data) {
     tr.tag("th").setText("+h UTC");
     tr.tag("th").setText("Załączenie");
     tr.tag("th").setText("Wyłączenie");
-
     tbl = tbl.tag("tbody");
+
+
     for (var i = 0; i < data.schedule.length; i++) {
         var sch = data.schedule[i];
 
         var tr = tbl.tag("tr");
 
-        for (var j = 0; j < sch.length; j++) {
+        if (i === data.currentDay - 1)
+            tr.style.fontWeight = "bold";
+
+        tr.tag("td").setText(i + 1);
+
+        for (var j = 0; j < 4; j++)
             tr.tag("td").setText(sch[j]);
-        }
-
-
     }
 
 

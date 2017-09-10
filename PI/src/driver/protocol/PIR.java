@@ -3,11 +3,11 @@ package driver.protocol;
 import api.WsServer;
 import com.json.JArray;
 import com.json.JObject;
+
+import com.utils.TDate;
 import com.threads.TThread;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
+import java.util.TimeZone;
 import mlogger.Log;
 
 public class PIR extends TThread {
@@ -23,6 +23,11 @@ public class PIR extends TThread {
     final static int BRIGHT_TIME = 25000;
 
     public void flush() {
+        if (!driver.State.pirEnabled) {
+            flushTS = 0;
+            return;
+        }
+
         if (!(helper.pirPower && System.currentTimeMillis() - powerOnTS > POWER_ON_DELAY))
             return;
 
@@ -36,55 +41,6 @@ public class PIR extends TThread {
         this.helper = helper;
     }
 
-    static int getSeconds(double day, double hMin, double hMax) {
-
-        hMin *= 60 * 60;
-        hMax *= 60 * 60;
-
-        day += 10;
-        if (day > 365)
-            day = day - 365;
-        day = 182 - Math.abs(day - 182);
-
-        double d = (hMax - hMin) / hMax;
-
-        // day =  day / 182.5d
-        day = (1 - Math.cos((day / 182.5d) * Math.PI)) / 2d;
-
-        return (int) (hMin + hMax * d * day);
-    }
-
-    private final static double WINTER_ON = 14.5; // +1 UTC
-    private final static double WINTER_OFF = 20; // +1  UTC
-    private final static double SUMMER_ON = 19; // +2 UTC
-    private final static double SUMMER_OFF = 21.5; // +2 UTC
-
-    boolean shouldBeActive() {
-
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(new Date());
-
-        int zoneOffset = (cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET)) / 1000;
-
-        int seconds = cal.get(Calendar.HOUR_OF_DAY) * 60 * 60
-                + cal.get(Calendar.MINUTE) * 60
-                + cal.get(Calendar.SECOND);
-
-        seconds -= zoneOffset;
-
-        int day = cal.get(Calendar.DAY_OF_YEAR);
-
-        return (seconds >= getSeconds(day, WINTER_ON, SUMMER_ON))
-                && (seconds <= getSeconds(day, WINTER_OFF, SUMMER_OFF));
-
-//        day = 182 - day;
-//        if (day < 0)
-//            day *= -1;
-//
-//        return (minutes >= getSeconds(day, 3.3, 5))
-//                && (minutes <= getSeconds(day, 6, 7.5));
-    }
-
     @Override
     protected void execute() throws Throwable {
 
@@ -93,14 +49,16 @@ public class PIR extends TThread {
             try {
 
                 long now = System.currentTimeMillis();
-                boolean canBright = shouldBeActive();
+                boolean canBright = !driver.State.scheduleEnabled
+                        || new ScheduleDay(Calendar.getInstance().get(Calendar.DAY_OF_YEAR))
+                                .isInRange();
 
                 if (canBright && !helper.pirPower) {
                     // włączenie modułu
                     Log.info("Włączam moduł PIR");
                     helper.pirPower = true;
                     helper.writePowerState();
-                    helper.pwmWrite(100);
+                    helper.pwmWrite(20);
                     powerOnTS = now;
                     notifyChanges();
                 }
@@ -172,56 +130,97 @@ public class PIR extends TThread {
 
     public static JArray getSchedule() {
         JArray main = new JArray();
-
-        for (int day = 1; day < 366; day++) {
-
-            Calendar cal = Calendar.getInstance();
-
-            cal.set(Calendar.DAY_OF_YEAR, day);
-
-            Date time = cal.getTime();
-
-            int zoneOffsetHours = (cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET)) / (60 * 60 * 1000);
-
-            int on = getSeconds(day, WINTER_ON, SUMMER_ON);
-            int off = getSeconds(day, WINTER_OFF, SUMMER_OFF);
-
-            JArray arr = main.array();
-            arr.add(day);
-
-            arr.add(new SimpleDateFormat("dd MMM").format(time));
-            arr.add(zoneOffsetHours);
-
-            Calendar con = Calendar.getInstance();
-            con.set(Calendar.HOUR_OF_DAY, zoneOffsetHours);
-            con.set(Calendar.MINUTE, 0);
-            con.set(Calendar.SECOND, on);
-
-            Calendar coff = Calendar.getInstance();
-            coff.set(Calendar.HOUR_OF_DAY, zoneOffsetHours);
-            coff.set(Calendar.MINUTE, 0);
-            coff.set(Calendar.SECOND, off);
-
-            arr.add(new SimpleDateFormat("HH:mm:ss").format(con.getTime()));
-
-            String line = String.format("%03d", day)
-                    + " (" + new SimpleDateFormat("dd MMM").format(time) + "): ";
-            line += new SimpleDateFormat("HH:mm:ss").format(con.getTime());
-            line += " - ";
-
-            // cal.set(Calendar.HOUR_OF_DAY, zoneOffsetHours);
-            line += new SimpleDateFormat("HH:mm:ss").format(coff.getTime());
-
-            arr.add(new SimpleDateFormat("HH:mm:ss").format(coff.getTime()));
-
-            line += " (+" + zoneOffsetHours + "h UTC)";
-
-            //  System.out.println(line);
-        }
-
+        for (int i = 1; i <= 365; i++)
+            main.add(new ScheduleDay(i).getData());
         return main;
     }
 
+    static class ScheduleDay {
+
+        public final int day;
+        public final TDate date;
+        public final TDate rise;
+        public final TDate set;
+        public final TDate dayLength;
+        public final int offsetHours;
+
+        public TDate on;
+        public TDate off;
+        public TDate duration;
+
+        public ScheduleDay(int day) {
+            this.day = day;
+            String sRise = PIR.SUN_RISE[day - 1];
+            String sSet = PIR.SUN_SET[day - 1];
+
+            int len = toMinutes(sSet) - toMinutes(sRise);
+
+            TimeZone.getAvailableIDs();
+
+            Calendar cal = Calendar.getInstance();
+            cal.set(Calendar.DAY_OF_YEAR, 1);
+            cal.set(Calendar.HOUR_OF_DAY, 0);
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
+
+            cal.add(Calendar.DAY_OF_YEAR, day - 1);
+
+            date = new TDate(cal.getTime());
+
+            cal.add(Calendar.MINUTE, toMinutes(sRise));
+            rise = new TDate(cal.getTime());
+
+            cal.add(Calendar.MINUTE, len);
+            set = new TDate(cal.getTime());
+
+            cal.add(Calendar.MINUTE, -toMinutes(sRise));
+            dayLength = new TDate(cal.getTime());
+
+            int zoneOffset = (cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET)) / (60 * 1000);
+            offsetHours = zoneOffset / 60;
+
+            on = new TDate(set).addMinutes(zoneOffset - 120);
+            off = new TDate(on).addMinutes(520 - (int) (len / 2.5));
+
+            duration = new TDate(off.getTime() - on.getTime());
+        }
+
+        /**
+         * Czy bieżąca date jest w zakresie aktywności
+         *
+         * @return
+         */
+        public boolean isInRange() {
+            long now = System.currentTimeMillis();
+            return now >= on.getTime() && now <= off.getTime();
+        }
+
+        public JArray getData() {
+            return new JArray().addAll(
+                    date.toString("dd MMM"),
+                    offsetHours,
+                    on.toString("HH:mm"),
+                    off.toString("HH:mm"),
+                    duration.toString("HH:mm"),
+                    dayLength.toString("HH:mm"),
+                    rise.toString("HH:mm"),
+                    set.toString("HH:mm")
+            );
+
+            /*
+                        System.out.println(sd.day + ".\t +" + sd.offsetHours + "\t"
+                    + sd.on.toString("dd-MM HH:mm")
+                    + " - " + sd.off.toString("HH:mm") + " " + sd.duration);
+             */
+        }
+
+        private static int toMinutes(String s) {
+            String[] a = s.split(":");
+            return Integer.parseInt(a[0]) * 60 + Integer.parseInt(a[1]);
+        }
+
+    }
     // godziny zachodów słońca (czas GMT) dla poszczególnych dni roku
     public final static String[] SUN_SET = {"16:31", "16:32", "16:33", "16:34",
         "16:35", "16:37", "16:38", "16:39", "16:41", "16:42", "16:43", "16:45",

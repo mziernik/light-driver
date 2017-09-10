@@ -2,6 +2,6 @@ package driver;
 
 public class State {
 
-    static boolean pirEnabled = true;
-    static boolean scheduleEnabled = true;
+    public static boolean pirEnabled = true;
+    public static boolean scheduleEnabled = true;
 }

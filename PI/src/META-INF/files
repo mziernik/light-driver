@@ -440,6 +440,7 @@ driver/protocol/Helper.java
 driver/protocol/Message$MsgData.class
 driver/protocol/Message.class
 driver/protocol/Message.java
+driver/protocol/PIR$ScheduleDay.class
 driver/protocol/PIR.class
 driver/protocol/PIR.java
 driver/protocol/Packet.class
@@ -577,10 +578,7 @@ res/picker/css/wheelcolorpicker.css
 res/picker/css/wheelcolorpicker.dark.css
 res/picker/jquery-1.7.1.min.js
 res/picker/jquery.wheelcolorpicker.js
-res/scripts.js
-res/service.js
 res/styles.css
 res/swiatlo.css
 res/swiatlo.html
 res/swiatlo.js
-res/utils.js

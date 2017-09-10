@@ -19,6 +19,7 @@ import http.websocket.handshake.ClientHandshake;
 import http.websocket.server.WebSocketServer;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
 import mlogger.Log;
@@ -211,6 +212,7 @@ public class WsServer extends WebSocketServer {
                                 .put("power", Main.helper.pirPower)
                                 .put("state", Main.helper.pirState)
                                 .put("value", Main.helper.pwmValue)
+                                .put("currentDay", Calendar.getInstance().get(Calendar.DAY_OF_YEAR))
                                 .put("schedule", PIR.getSchedule());
 
                     break;
