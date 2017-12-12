@@ -23,7 +23,7 @@ public abstract class Channel {
         Calendar cal = Calendar.getInstance();
         cal.setTime(new TDate());
         int hour = cal.get(Calendar.HOUR_OF_DAY);
-        return hour >= 6 && hour < 22;
+        return hour >= 6 ;
     }
 
     public final static Map<String, Channel> map = new LinkedHashMap<>();
