@@ -54,7 +54,7 @@ public class Helper {
 
                     int v = bytes[0] & 0xFF;
 
-                    pirState = (v & 0x01) != 0;
+                    pirState = (v & 0x01) == 0;
                     batState = (v & 0x02) == 0;
 
                     //   System.out.println("PIR: " + pirState + ", BAT: " + batState);
